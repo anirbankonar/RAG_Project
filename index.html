@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Document QA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .query-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-row .input-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .query-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+
+        .query-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .query-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-header {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .answer-text {
+            line-height: 1.6;
+            color: #555;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .meta-info {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+            border-left-color: #d63031;
+        }
+
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 RAG Document QA</h1>
+            <p>Ask questions about your document using AI-powered search and generation</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="query-section">
+                <div class="input-group">
+                    <label for="query">Your Question:</label>
+                    <textarea id="query" placeholder="Enter your question about the document..."></textarea>
+                </div>
+                
+                <div class="settings-row">
+                    <div class="input-group">
+                        <label for="k">Number of Sources:</label>
+                        <select id="k">
+                            <option value="3" selected>3</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="model">AI Model:</label>
+                        <select id="model">
+                            <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo</option>
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="query-button" onclick="submitQuery()">Ask Question</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your question...</p>
+            </div>
+            
+            <div class="result-section" id="result-section">
+                <div class="result-header">Answer:</div>
+                <div class="answer-text" id="answer-text"></div>
+                <div class="meta-info">
+                    <span id="sources-info"></span>
+                    <span class="status-indicator" id="status-indicator"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://0.0.0.0:8000';
+
+        async function submitQuery() {
+            const query = document.getElementById('query').value.trim();
+            const k = parseInt(document.getElementById('k').value);
+            const model = document.getElementById('model').value;
+            
+            if (!query) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            // Show loading state
+            showLoading(true);
+            hideResults();
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        k: k,
+                        model: model
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                displayResults(data, true);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                let errorMessage = error.message;
+                
+                // Try to get more detailed error info
+                if (error.response) {
+                    try {
+                        const errorData = await error.response.json();
+                        errorMessage = errorData.detail || errorData.message || error.message;
+                    } catch (e) {
+                        errorMessage = `HTTP ${error.response.status}: ${error.response.statusText}`;
+                    }
+                }
+                
+                displayError(errorMessage);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const button = document.querySelector('.query-button');
+            
+            if (show) {
+                loading.style.display = 'block';
+                button.disabled = true;
+                button.textContent = 'Processing...';
+            } else {
+                loading.style.display = 'none';
+                button.disabled = false;
+                button.textContent = 'Ask Question';
+            }
+        }
+        
+        function hideResults() {
+            document.getElementById('result-section').style.display = 'none';
+        }
+        
+        function displayResults(data, success) {
+            const resultSection = document.getElementById('result-section');
+            const answerText = document.getElementById('answer-text');
+            const sourcesInfo = document.getElementById('sources-info');
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            resultSection.style.display = 'block';
+            
+            if (success) {
+                answerText.textContent = data.answer;
+                answerText.className = 'answer-text';
+                sourcesInfo.textContent = `Based on ${data.sources_count} source(s)`;
+                statusIndicator.textContent = 'Success';
+                statusIndicator.className = 'status-indicator status-success';
+            }
+        }
+        
+        function displayError(message) {
+            const resultSection = document.getElementById('result-section');
+            const answerText = document.getElementById('answer-text');
+            const sourcesInfo = document.getElementById('sources-info');
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            resultSection.style.display = 'block';
+            answerText.textContent = `Error: ${message}`;
+            answerText.className = 'answer-text error';
+            sourcesInfo.textContent = '';
+            statusIndicator.textContent = 'Error';
+            statusIndicator.className = 'status-indicator status-error';
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('query').addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'Enter') {
+                submitQuery();
+            }
+        });
+        
+        // Check API health on page load
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                console.log('API Status:', data);
+                
+                // Show API status in UI
+                if (data.status !== 'healthy') {
+                    displayError(`API Status: ${data.message || 'Service unavailable'}`);
+                }
+            } catch (error) {
+                console.error('API not available:', error);
+                displayError(`Cannot connect to API server at ${API_BASE_URL}. Make sure the server is running.`+error);
+            }
+        });
+    </script>
+</body>
+</html>

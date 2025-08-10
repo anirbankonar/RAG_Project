@@ -1,0 +1,8 @@
+faiss-cpu
+pypdf
+sentence-transformers
+numpy
+torch
+transformers
+scikit-learn
+tqdm
