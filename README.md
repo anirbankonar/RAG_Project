@@ -1,17 +1,16 @@
-# RAG Pipeline with FAISS Index
+# RAG Document QA System
 
-A comprehensive Retrieval-Augmented Generation (RAG) pipeline that uses FAISS for efficient similarity search on PDF documents. This system extracts text from PDFs, chunks it into manageable pieces, creates embeddings using sentence transformers, and builds a searchable FAISS index.
+A comprehensive Retrieval-Augmented Generation (RAG) system that combines FAISS vector search with OpenAI language models for intelligent document question answering. Features a FastAPI REST API and web interface for easy interaction.
 
 ## Features
 
-- **PDF Processing**: Extract and clean text from PDF documents
-- **Smart Chunking**: Intelligent text chunking with configurable overlap
-- **Embedding Generation**: Uses sentence transformers for high-quality text embeddings
-- **FAISS Indexing**: Multiple FAISS index types (Flat, IVF, HNSW) for different use cases
-- **Efficient Search**: Fast similarity search with configurable result counts
-- **Context-Aware Results**: Search results include surrounding context for better understanding
-- **Persistence**: Save and load indexes to avoid reprocessing
-- **Interactive Interface**: Command-line interface for easy querying
+- **PDF Processing**: Extract and clean text from PDF documents using LangChain RecursiveCharacterTextSplitter
+- **OpenAI Integration**: Uses OpenAI embeddings and chat models for high-quality responses
+- **FAISS Vector Store**: Efficient similarity search with persistent local storage
+- **REST API**: FastAPI server with CORS support for web integration
+- **Web UI**: Clean HTML interface for document question answering
+- **Smart Chunking**: Configurable chunk size (1000) and overlap (200)
+- **Intelligent Responses**: Combines vector search with LLM generation for comprehensive answers
 
 ## Architecture
 
@@ -21,34 +20,65 @@ PDF Document → Text Extraction → Text Chunking → Embedding Generation → 
 
 ## Components
 
-1. **PDFProcessor** (`pdf_processor.py`): Handles PDF text extraction and chunking
-2. **FAISSIndexer** (`faiss_indexer.py`): Manages embeddings and FAISS index operations
-3. **RAGPipeline** (`rag_pipeline.py`): Main pipeline that orchestrates all components
-4. **Main Script** (`main.py`): Interactive command-line interface
-5. **Example Script** (`example.py`): Programmatic usage examples
+1. **PDFProcessor** (`pdf_processor.py`): Handles PDF processing with LangChain and FAISS integration
+2. **FastAPI Server** (`api.py`): REST API server with CORS support
+3. **Web UI** (`index.html`): HTML interface for document question answering
+4. **Example Script** (`example.py`): Demonstrates PDF processing and RAG queries
 
 ## Installation
 
-1. Clone or download the project files
-2. Install the required dependencies:
+1. Clone the repository:
+```bash
+git clone https://github.com/anirbankonar/RAG_Project.git
+cd RAG_Project
+```
 
+2. Install the required dependencies:
 ```bash
 pip install -r requirements.txt
+```
+
+3. Set your OpenAI API key:
+```bash
+export OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ## Usage
 
 ### Quick Start
 
-1. **Run the interactive interface:**
-```bash
-python main.py
-```
-
-2. **Run the example script:**
+1. **Process a PDF and create FAISS index:**
 ```bash
 python example.py
 ```
+
+2. **Start the FastAPI server:**
+```bash
+python api.py
+```
+The server will start on http://localhost:8000
+
+3. **Use the Web UI:**
+- Open `index.html` in your web browser
+- Enter your question about the document
+- Configure search parameters (number of sources, AI model)
+- Click "Ask Question" to get AI-generated answers
+
+### Alternative: Direct API Usage
+
+You can also query the API directly:
+
+```bash
+curl -X POST "http://localhost:8000/query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is this document about?", "k": 3}'
+```
+
+### API Endpoints
+
+- `POST /query` - Submit a question and get an AI-generated answer
+- `GET /health` - Check service health
+- `GET /docs` - Interactive API documentation
 
 ### Programmatic Usage
 
