@@ -46,8 +46,10 @@ api.log
 # PDF files
 *.pdf
 
-# FAISS index directory
+# FAISS index directory and files
 faiss_index/
+*.faiss
+*.pkl
 
 # Environment variables
 .env
